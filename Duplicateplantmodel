@@ -1,0 +1,120 @@
+%% this code connot change the tag names in MEasuemnet block ( 3-Phase)%%%
+
+
+model = 'sample1';
+subsystemName = 'comm';
+numCopies = 1;
+numColumns = 1;
+xPos = 1000;
+yPos = 826;      
+xOffset = 50;
+yOffset = 20;
+block_counter = 1;
+
+% Get the size of the original subsystem block
+blockSize = get_param([model '/' subsystemName], 'Position');
+width = blockSize(3) - blockSize(1);
+height = blockSize(4) - blockSize(2);
+
+for i = 1:numCopies
+    % Copy the subsystem
+    newSubsystemName = ['comm' num2str(i)];
+    newBlockPath = [model '/' newSubsystemName];
+    add_block([model '/' subsystemName], newBlockPath, 'Position', [xPos yPos xPos+width yPos+height]);
+    
+    % Change the tag name of From blocks
+    fromBlocks = find_system(newBlockPath, 'BlockType', 'From')';
+    for j = 1:length(fromBlocks)
+        blockPath = fromBlocks{j};
+        oldTag = get_param(blockPath, 'GotoTag');
+        newTag = [oldTag 'ppc1'];
+        set_param(blockPath, 'GotoTag', newTag);
+    end
+    
+    % Change the tag name of Goto blocks
+    gotoBlocks = find_system(newBlockPath, 'BlockType', 'Goto')';
+    for j = 1:length(gotoBlocks)
+        blockPath = gotoBlocks{j};
+        oldTag = get_param(blockPath, 'GotoTag');
+        newTag = [oldTag 'ppc1'];
+        set_param(blockPath, 'GotoTag', newTag);
+    end
+
+    % Find all subsystems in the new subsystem
+    allSubsystems = find_system(newBlockPath, 'SearchDepth', inf, 'BlockType', 'SubSystem');
+    
+    % Reverse the order of subsystems
+    allSubsystems = flip(allSubsystems);
+    
+    for k = 1:length(allSubsystems)
+        subsystemPath = allSubsystems{k};
+        
+        % Skip if it's the top-level subsystem
+        if strcmp(subsystemPath, newBlockPath)
+            continue;
+        end
+        
+        % Append 'ppc1' to the name of the subsystem
+        [~, subsystemName, ~] = fileparts(subsystemPath);
+        newSubsystemName = [subsystemName 'ppc1'];
+        set_param(subsystemPath, 'Name', newSubsystemName);
+    end
+
+    % Update the name of the subsystem
+    set_param(newBlockPath, 'Name', ['comm' num2str(i) '_updated']);
+end
+
+
+
+
+
+
+
+% Find all OpInput blocks in the model
+opInputBlocks = find_system(model, 'LookUnderMasks', 'all', 'FollowLinks', 'on', 'ReferenceBlock', 'rtlab/OpInput');
+
+% Loop through each OpInput block and update the 'identifier_use' parameter
+for i = 1:length(opInputBlocks)
+    try
+        % Get the current identifier_use value
+        currentIdentifier = get_param(opInputBlocks{i}, 'identifier_use');
+        
+        % Append 'hems' to the current value
+        newIdentifier = [currentIdentifier 'hems'];
+        
+        % Set the new identifier_use value
+        set_param(opInputBlocks{i}, 'identifier_use', newIdentifier); 
+        
+        fprintf('Updated identifier_use for OpInput block: %s to %s\n', opInputBlocks{i}, newIdentifier);
+    catch ME
+        fprintf('Could not update identifier_use for OpInput block %s: %s\n', opInputBlocks{i}, ME.message);
+    end
+end
+
+% Find all OpOutput blocks in the model
+opOutputBlocks = find_system(model, 'LookUnderMasks', 'all', 'FollowLinks', 'on', 'ReferenceBlock', 'rtlab/OpOutput');
+
+% Loop through each OpOutput block and update the 'identifier_use' parameter
+for i = 1:length(opOutputBlocks)
+    try
+        % Get the current identifier_use value
+        currentIdentifier = get_param(opOutputBlocks{i}, 'identifier_use');
+        
+        % Append 'hems' to the current value
+        newIdentifier = [currentIdentifier 'hems'];
+        
+        % Set the new identifier_use value
+        set_param(opOutputBlocks{i}, 'identifier_use', newIdentifier); 
+        
+        fprintf('Updated identifier_use for OpOutput block: %s to %s\n', opOutputBlocks{i}, newIdentifier);
+    catch ME
+        fprintf('Could not update identifier_use for OpOutput block %s: %s\n', opOutputBlocks{i}, ME.message);
+    end
+end
+
+% Save and open the model
+save_system(model);
+open_system(model);
+
+fprintf('Updated identifier_use for all OpInput and OpOutput blocks in %s\n', model);
+
