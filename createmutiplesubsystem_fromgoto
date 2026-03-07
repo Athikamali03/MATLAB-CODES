@@ -1,0 +1,44 @@
+model = 'HEMSnew';
+subsystemName = 'comm';
+numCopies = 150;
+numColumns = 30;
+xPos = 1000;
+yPos = 826;       
+xOffset = 50;
+yOffset = 20;
+block_counter = 1;
+ 
+% Get the size of the original subsystem block
+blockSize = get_param([model '/' subsystemName], 'Position');
+width = blockSize(3) - blockSize(1);
+height = blockSize(4) - blockSize(2);
+ 
+for i = 1:numCopies
+    % Copy the subsystem
+    newSubsystemName = ['comm' num2str(i) '_PPCnewG4'];
+    newBlockPath = [model '/' newSubsystemName];
+    add_block([model '/' subsystemName], newBlockPath, 'Position', [xPos yPos xPos+width yPos+height]);
+    % Change the tag name of From blocks
+    fromBlocks = find_system(newBlockPath, 'BlockType', 'From')';
+    for j = 1:length(fromBlocks)
+        blockPath = fromBlocks{j};
+        oldTag = get_param(blockPath, 'GotoTag');
+        newTag = [oldTag num2str(i) '_PPCnewG4'];
+        set_param(blockPath, 'GotoTag', newTag);
+        end
+    % Change the tag name of Goto blocks
+    gotoBlocks = find_system(newBlockPath, 'BlockType', 'Goto')';
+    for j = 1:length(gotoBlocks)
+        blockPath = gotoBlocks{j};
+        oldTag = get_param(blockPath, 'GotoTag');
+        newTag = [oldTag num2str(i) '_PPCnewG4'];
+        set_param(blockPath, 'GotoTag', newTag);
+    end
+    set_param(newBlockPath, 'Name', ['comm' num2str(i) '_PPCnewG4']);
+     if mod(i, numColumns) == 0
+        xPos = xPos + xOffset + width;
+        yPos = 826;
+    else
+         yPos = yPos + yOffset + height;
+ end
+end
