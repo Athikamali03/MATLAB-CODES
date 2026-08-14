@@ -1,0 +1,14 @@
+x_goto = 100;
+y_goto = 100;
+x_from = 300;
+y_from = 100;
+spacing = 50;
+
+for i = 1:20
+    goto_tag_name = ['STAT_LR', num2str(i)];
+    
+    add_block('simulink/Signal Routing/Goto', ['Arras700mw_1/', goto_tag_name], 'GotoTag', goto_tag_name, 'TagVisibility', 'global', 'Position', [x_goto, y_goto, x_goto+30, y_goto+14]);
+   
+    y_goto = y_goto + spacing;
+    y_from = y_from + spacing;
+end
